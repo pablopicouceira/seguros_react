@@ -1,5 +1,7 @@
 import React, {useState} from 'react';
-import styled from "@emotion/styled"
+import styled from "@emotion/styled";
+import { getYearDifference,calculaSegunOrigen,calcularSegunPlan } from "../helper";
+
 
 const Campo = styled.div`
 display:flex;
@@ -42,17 +44,28 @@ margin-top: 2rem;
 }
 `;
 
+const Error = styled.div` 
+background-color:red;
+color:white;
+padding:1rem;
+width:100%;
+text-align:center;
+margin-bottom:2rem;
+`;
+
 const Formulario = () => {
 
     const [datos, setDatos] = useState({
-        marca: "",
+        origen: "",
         year: "",
         plan:""
     })
 
+    const [error, setError]= useState(false)
+
 // Extraer los valores del state
     
-    const { marca, year, plan } = datos;
+    const { origen, year, plan } = datos;
 
     // Leer los datos del formulario y colocarlos en el state
 
@@ -62,13 +75,67 @@ const Formulario = () => {
         })
     }
 
+
+// Cuando el usuario presiona submit
+    
+    const calcularSeguro = e => {
+        e.preventDefault();
+
+        if (origen.trim() === "" || year.trim() === "" || plan.trim() === "") { 
+
+            setError(true);
+            return
+        }
+        setError(false)
+    }
+
+    // Iniciamos con una base de 2000
+
+    let resultado =2000
+
+
+    // Obtener la diferencia en años (el año en el que estamos menos el año de fabricación del coche)
+    
+    const diferencia = getYearDifference(year)
+
+    /* Incremento según el año: 
+        -3% por cada año
+    */
+    
+    resultado -= ((diferencia * 3) * resultado) / 100
+    
+
+    /* Incremento según el origen: 
+        Americano 15% 
+        Asiático 5%
+        Europeo 30%
+    */
+    
+    resultado = calculaSegunOrigen(origen) * resultado
+
+   /* Incremento según el tipo de plan: 
+        Básico 20% 
+        Completo 50%
+    */
+
+    const incrementoPlan = calcularSegunPlan(plan)
+    resultado = parseFloat(incrementoPlan * resultado).toFixed(2)
+    
+    console.log(resultado)
+
+    // Total
+    
+
     return ( 
-        <form>
+        <form
+            onSubmit={calcularSeguro}>
+            
+            {error ?<Error>Deben rellenarse todos los campos</Error> :null}
             <Campo>
                 <Label>Origen</Label>
                 <Select
-                    name="marca"
-                    value={marca}
+                    name="origen"
+                    value={origen}
                     onChange={obtenerInformacion}
                 >
 
@@ -122,12 +189,13 @@ const Formulario = () => {
                     name="plan"
                     value="completo"
                     checked={plan === "completo"}
-                    onChange={obtenerInformacion
+                    onChange={obtenerInformacion}
 
-                /> Completo
+                        /> Completo
+                    
                 </Campo>
             
-            <Button type="button">Calcular</Button>
+            <Button type="submit">Calcular</Button>
         </form>
      );
 }
